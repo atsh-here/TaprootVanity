@@ -58,6 +58,7 @@ Derive a known key:
 
 # Or from build-cuda/:
 ./taproot-vanity --key 0000000000000000000000000000000000000000000000000000000000000001
+./build/taproot-vanity --key 0000000000000000000000000000000000000000000000000000000000000001
 ```
 
 Search on CPU:
@@ -80,3 +81,5 @@ Seed arguments that are valid even-length hex strings are decoded to bytes befor
 derivation; other strings are used as UTF-8 bytes. Prefixes must start with `bc1p` and
 can only contain lowercase Bech32 characters. For example, `bc1pp` asks for one vanity
 character after the mandatory `bc1p` prefix and should usually return quickly.
+./build-cuda/taproot-vanity-cuda bc1pexample "client supplied high entropy seed" 1000000
+```

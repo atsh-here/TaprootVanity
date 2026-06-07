@@ -24,6 +24,9 @@ int main(int argc, char** argv) {
     const std::string seed_string = argv[2];
     const std::uint64_t attempts = std::stoull(argv[3]);
     const auto seed = taproot_vanity::seed_from_user_string(seed_string);
+    const std::string seed_string = argv[2];
+    const std::uint64_t attempts = std::stoull(argv[3]);
+    const std::vector<std::uint8_t> seed(seed_string.begin(), seed_string.end());
     return taproot_vanity_cuda_search(seed.data(), static_cast<std::uint32_t>(seed.size()),
                                       prefix.c_str(), 0, attempts);
 }

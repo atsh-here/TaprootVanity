@@ -64,6 +64,11 @@ __device__ __forceinline__ void sha256_single(const std::uint8_t* msg, std::uint
     block[len] = 0x80U;
     const std::uint64_t bit_len = static_cast<std::uint64_t>(len) * 8ULL;
     const std::uint32_t total = ((len + 9U + 63U) / 64U) * 64U;
+    std::uint8_t block[128] = {};
+    for (std::uint32_t i = 0; i < len; ++i) block[i] = msg[i];
+    block[len] = 0x80U;
+    const std::uint64_t bit_len = static_cast<std::uint64_t>(len) * 8ULL;
+    const std::uint32_t total = (len + 9U <= 64U) ? 64U : 128U;
     for (int i = 0; i < 8; ++i) block[total - 1 - i] = static_cast<std::uint8_t>(bit_len >> (8 * i));
     for (std::uint32_t off = 0; off < total; off += 64) {
         std::uint32_t w[64];
@@ -104,6 +109,7 @@ void derive_private_keys_kernel(std::uint32_t seed_len, std::uint64_t start_coun
     for (std::uint32_t lane = 0; lane < kCandidatesPerThread; ++lane) {
         const std::uint64_t counter = start_counter + base + lane;
         std::uint8_t msg[kMaxMessage];
+        std::uint8_t msg[sizeof(domain) - 1 + kMaxSeed + 8 + 4];
         std::uint32_t pos = 0;
         #pragma unroll
         for (std::uint32_t i = 0; i < sizeof(domain) - 1; ++i) msg[pos++] = static_cast<std::uint8_t>(domain[i]);

@@ -6,6 +6,10 @@
 
 namespace {
 
+std::vector<std::uint8_t> bytes_from_string(const std::string& s) {
+    return {s.begin(), s.end()};
+}
+
 void print_key(const taproot_vanity::TaprootKeyData& key) {
     std::cout << "privkey=" << taproot_vanity::hex(key.private_key) << '\n'
               << "internal_xonly_pubkey=" << taproot_vanity::hex(key.internal_xonly_pubkey) << '\n'
@@ -41,6 +45,7 @@ int main(int argc, char** argv) {
                 return 64;
             }
             const auto seed = taproot_vanity::seed_from_user_string(argv[3]);
+            const auto seed = bytes_from_string(argv[3]);
             const std::uint64_t attempts = std::stoull(argv[4]);
             const auto found = taproot_vanity::search_prefix(seed, prefix, 0, attempts);
             if (!found) {
