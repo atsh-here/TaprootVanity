@@ -43,12 +43,21 @@ while still offloading the embarrassingly parallel candidate stream.
 Run the correctness vector:
 
 ```bash
+# From the repository root after the CPU build:
 ./build/taproot-vanity --self-test
+
+# Or, if you configured only build-cuda and are still in build-cuda/:
+./taproot-vanity --self-test
 ```
 
 Derive a known key:
 
 ```bash
+# From the repository root:
+./build/taproot-vanity --key 0000000000000000000000000000000000000000000000000000000000000001
+
+# Or from build-cuda/:
+./taproot-vanity --key 0000000000000000000000000000000000000000000000000000000000000001
 ./build/taproot-vanity --key 0000000000000000000000000000000000000000000000000000000000000001
 ```
 
@@ -61,5 +70,16 @@ Search on CPU:
 Search with CUDA:
 
 ```bash
+# From the repository root:
+./build-cuda/taproot-vanity-cuda bc1pp "$(openssl rand -hex 64)" 1000000
+
+# Or from build-cuda/:
+./taproot-vanity-cuda bc1pp "$(openssl rand -hex 64)" 1000000
+```
+
+Seed arguments that are valid even-length hex strings are decoded to bytes before key
+derivation; other strings are used as UTF-8 bytes. Prefixes must start with `bc1p` and
+can only contain lowercase Bech32 characters. For example, `bc1pp` asks for one vanity
+character after the mandatory `bc1p` prefix and should usually return quickly.
 ./build-cuda/taproot-vanity-cuda bc1pexample "client supplied high entropy seed" 1000000
 ```

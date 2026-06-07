@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iomanip>
+#include <cctype>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -175,6 +176,30 @@ std::string hex(std::span<const std::uint8_t> bytes) {
     oss << std::hex << std::setfill('0');
     for (const auto b : bytes) oss << std::setw(2) << static_cast<int>(b);
     return oss.str();
+}
+
+std::vector<std::uint8_t> seed_from_user_string(const std::string& seed) {
+    std::string hexstr = seed;
+    if (hexstr.rfind("0x", 0) == 0 || hexstr.rfind("0X", 0) == 0) hexstr = hexstr.substr(2);
+    const bool is_even_hex = !hexstr.empty() && (hexstr.size() % 2 == 0) &&
+                             std::all_of(hexstr.begin(), hexstr.end(), [](unsigned char c) {
+                                 return std::isxdigit(c) != 0;
+                             });
+    if (!is_even_hex) return {seed.begin(), seed.end()};
+
+    std::vector<std::uint8_t> out(hexstr.size() / 2);
+    for (std::size_t i = 0; i < out.size(); ++i) {
+        out[i] = static_cast<std::uint8_t>(std::stoul(hexstr.substr(i * 2, 2), nullptr, 16));
+    }
+    return out;
+}
+
+
+bool valid_taproot_prefix(const std::string& prefix) {
+    if (prefix.rfind("bc1p", 0) != 0) return false;
+    return std::all_of(prefix.begin() + 4, prefix.end(), [](char c) {
+        return std::strchr(kBech32Alphabet, c) != nullptr;
+    });
 }
 
 std::array<std::uint8_t, 32> seed_to_private_key(std::span<const std::uint8_t> seed,

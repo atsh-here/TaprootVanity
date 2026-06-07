@@ -17,6 +17,8 @@ constexpr std::uint32_t kCandidatesPerThread = 4;
 constexpr std::uint32_t kBlocks = 240;
 constexpr std::uint32_t kBatch = kThreadsPerBlock * kCandidatesPerThread * kBlocks;
 constexpr std::uint32_t kMaxSeed = 256;
+constexpr std::uint32_t kMaxMessage = 21 + kMaxSeed + 8 + 4;
+constexpr std::uint32_t kMaxShaBlocks = (kMaxMessage + 9 + 63) / 64;
 
 __constant__ std::uint8_t c_seed[kMaxSeed];
 __constant__ std::uint8_t c_order[32] = {
@@ -57,6 +59,11 @@ __device__ __forceinline__ void sha256_single(const std::uint8_t* msg, std::uint
         0x748f82eeU,0x78a5636fU,0x84c87814U,0x8cc70208U,0x90befffaU,0xa4506cebU,0xbef9a3f7U,0xc67178f2U};
     std::uint32_t h[8] = {0x6a09e667U,0xbb67ae85U,0x3c6ef372U,0xa54ff53aU,
                           0x510e527fU,0x9b05688cU,0x1f83d9abU,0x5be0cd19U};
+    std::uint8_t block[kMaxShaBlocks * 64] = {};
+    for (std::uint32_t i = 0; i < len; ++i) block[i] = msg[i];
+    block[len] = 0x80U;
+    const std::uint64_t bit_len = static_cast<std::uint64_t>(len) * 8ULL;
+    const std::uint32_t total = ((len + 9U + 63U) / 64U) * 64U;
     std::uint8_t block[128] = {};
     for (std::uint32_t i = 0; i < len; ++i) block[i] = msg[i];
     block[len] = 0x80U;
@@ -101,6 +108,7 @@ void derive_private_keys_kernel(std::uint32_t seed_len, std::uint64_t start_coun
     #pragma unroll
     for (std::uint32_t lane = 0; lane < kCandidatesPerThread; ++lane) {
         const std::uint64_t counter = start_counter + base + lane;
+        std::uint8_t msg[kMaxMessage];
         std::uint8_t msg[sizeof(domain) - 1 + kMaxSeed + 8 + 4];
         std::uint32_t pos = 0;
         #pragma unroll
@@ -147,6 +155,16 @@ extern "C" int taproot_vanity_cuda_search(const std::uint8_t* seed,
             check_cuda(cudaGetLastError(), "launch derive_private_keys_kernel");
             check_cuda(cudaMemcpy(keys.data(), d_keys, batch * 32, cudaMemcpyDeviceToHost), "copy keys");
             check_cuda(cudaMemcpy(valid.data(), d_valid, batch, cudaMemcpyDeviceToHost), "copy valid");
+            if (done == 0) {
+                const std::uint64_t checks = std::min<std::uint64_t>(batch, 8);
+                for (std::uint64_t i = 0; i < checks; ++i) {
+                    const auto expected = taproot_vanity::seed_to_private_key(
+                        std::span<const std::uint8_t>(seed, seed_len), start_counter + i);
+                    if (std::memcmp(expected.data(), keys.data() + i * 32, 32) != 0) {
+                        throw std::runtime_error("CUDA seed derivation self-check failed");
+                    }
+                }
+            }
             for (std::uint64_t i = 0; i < batch; ++i) {
                 if (valid[i] == 0) continue;
                 std::array<std::uint8_t, 32> key{};

@@ -40,6 +40,11 @@ int main(int argc, char** argv) {
 
         if (argc == 5 && std::string(argv[1]) == "--search") {
             const std::string prefix = argv[2];
+            if (!taproot_vanity::valid_taproot_prefix(prefix)) {
+                std::cerr << "prefix must start with bc1p and use only lowercase Bech32 characters\n";
+                return 64;
+            }
+            const auto seed = taproot_vanity::seed_from_user_string(argv[3]);
             const auto seed = bytes_from_string(argv[3]);
             const std::uint64_t attempts = std::stoull(argv[4]);
             const auto found = taproot_vanity::search_prefix(seed, prefix, 0, attempts);

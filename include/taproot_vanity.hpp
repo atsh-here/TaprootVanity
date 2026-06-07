@@ -20,6 +20,8 @@ struct TaprootKeyData {
 
 std::array<std::uint8_t, 32> parse_hex32(const std::string& hex);
 std::string hex(std::span<const std::uint8_t> bytes);
+std::vector<std::uint8_t> seed_from_user_string(const std::string& seed);
+bool valid_taproot_prefix(const std::string& prefix);
 std::array<std::uint8_t, 32> seed_to_private_key(std::span<const std::uint8_t> seed,
                                                    std::uint64_t counter);
 TaprootKeyData derive_taproot_key(const std::array<std::uint8_t, 32>& private_key);
